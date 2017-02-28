@@ -11,6 +11,7 @@ import datavisualizer.InstancePositions;
 import datavisualizer.threed.multiview.Visualization3DMultiViewGUI;
 import datavisualizer.twod.VisualizationGUI;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -51,11 +52,23 @@ public class DistanceVisualization {
                 loadLabels(labelsFileName, labelsFileName, labels);                
                 i++;
             } else if (args[i].equals("-arff")) {
-                String arffFile = args[i+1];
-                
-                arff = loadDataFromArff(arffFile);
-                DistanceMatrix m = euclideanFromARFF(arff);
-                matrices.add(new Pair<>("ARFF-euclidean-distance", m));
+                File arffFile = new File(args[i+1]);
+                arff = loadDataFromArff(arffFile.getAbsolutePath());
+                double[][] norm_minmax = normalizeARFF(arff,NORMALIZE_MIN_MAX);
+                double[][] norm_avgstd = normalizeARFF(arff,NORMALIZE_AVG_STD);
+                DistanceMatrix m = euclideanFromARFF(arff, arff.originalData);
+                matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance", m));
+                matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance-norm-minmax", 
+                        euclideanFromARFF(arff,norm_minmax)));
+                matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance-norm-std", 
+                        euclideanFromARFF(arff,norm_avgstd)));
+                matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-jaccard-distance", 
+                        jaccardFromARFF(arff, arff.originalData)));
+                matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-jaccard-distance-norm-minmax", 
+                        jaccardFromARFF(arff,norm_minmax)));
+                matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-jaccard-distance-norm-std", 
+                        jaccardFromARFF(arff,norm_avgstd)));
+
                 labels.add(new Pair<>("ARFF-class-labels",arff.classLabels));
                 if (names.isEmpty()) {
                     for(String name:m.names) names.add(name);
@@ -170,6 +183,7 @@ public class DistanceVisualization {
 
     private static ARFFInformation loadDataFromArff(String arffFile) throws Exception 
     {
+        System.out.println("Loading "+arffFile);
         ARFFInformation ret = new ARFFInformation();
         
         BufferedReader br = new BufferedReader(new FileReader(arffFile));
@@ -196,43 +210,130 @@ public class DistanceVisualization {
                 break;
             }
         }
-        
-        while(true){
+
+        while (true) {
             String line = br.readLine();
-            if (line==null) break;
-            StringTokenizer st = new StringTokenizer(line,",");
+            if (line == null) {
+                break;
+            }
+            StringTokenizer st = new StringTokenizer(line, ",");
             double instance[] = new double[ret.featureNames.size()];
-            for(int i = 0;i<instance.length;i++) {
+            for (int i = 0; i < instance.length; i++) {
                 instance[i] = Double.parseDouble(st.nextToken());
             }
             instances.add(instance);
             ret.classLabels.add(st.nextToken());
-        }        
-        
+        }
+
         ret.originalData = new double[instances.size()][ret.featureNames.size()];
-        for(int i = 0;i<ret.originalData.length;i++) {
-            for(int j = 0;j<ret.originalData[i].length;j++) {
+        for (int i = 0; i < ret.originalData.length; i++) {
+            for (int j = 0; j < ret.originalData[i].length; j++) {
                 ret.originalData[i][j] = instances.get(i)[j];
             }
         }
         return ret;
     }
     
+    public final static int NORMALIZE_MIN_MAX = 1;
+    public final static int NORMALIZE_AVG_STD = 2;
     
-    public static DistanceMatrix euclideanFromARFF(ARFFInformation arff)
-    {
+    private static double[][] normalizeARFF(ARFFInformation arff, int normalization) {
+        int n = arff.classLabels.size();
+        int nFeatures = arff.featureNames.size();
+        double data[][] = new double[n][nFeatures];
+        for (int i = 0; i < n; i++) {
+            for (int f = 0; f < nFeatures; f++) {
+                data[i][f] = arff.originalData[i][f];
+            }
+        }
+        if (normalization > 0) {
+            double norm_maximums[] = new double[nFeatures];
+            double norm_minimums[] = new double[nFeatures];
+            double norm_sum[] = new double[nFeatures];
+            double norm_avg[] = new double[nFeatures];
+            double norm_mean[] = new double[nFeatures];
+            double norm_M2[] = new double[nFeatures];
+            double norm_std[] = new double[nFeatures];
+            for (int f = 0; f < nFeatures; f++) {
+                norm_maximums[f] = Double.MIN_VALUE;
+                norm_minimums[f] = Double.MAX_VALUE;
+                norm_sum[f] = 0;
+                norm_mean[f] = 0;
+                norm_M2[f] = 0;
+            }
+            for (int i = 0; i < n; i++) {
+                for (int f = 0; f < nFeatures; f++) {
+                    if (data[i][f] > norm_maximums[f]) {
+                        norm_maximums[f] = data[i][f];
+                    }
+                    if (data[i][f] < norm_minimums[f]) {
+                        norm_minimums[f] = data[i][f];
+                    }
+                    norm_sum[f] += data[i][f];
+                }
+            }
+            for (int f = 0; f < nFeatures; f++) {
+                norm_avg[f] = norm_avg[f] / n;
+            }
+            for (int i = 0; i < n; i++) {
+                for (int f = 0; f < nFeatures; f++) {
+                    double delta = data[i][f] - norm_mean[f];
+                    norm_mean[f] += delta / (i + 1);
+                    double delta2 = data[i][f] - norm_mean[f];
+                    norm_M2[f] += delta * delta2;
+                }
+            }
+            for (int f = 0; f < nFeatures; f++) {
+                norm_std[f] = norm_M2[f] / (n - 1);
+            }
+
+            for (int i = 0; i < n; i++) {
+                for (int f = 0; f < nFeatures; f++) {
+                    if (normalization == 1) {
+                        data[i][f] = (data[i][f] - norm_minimums[f]) / (norm_maximums[f] - norm_minimums[f]);
+                    } else if (normalization == 2) {
+                        data[i][f] = (data[i][f] - norm_avg[f]) / norm_std[f];
+                    }
+                }
+            }
+
+        }
+        return data;
+    }
+
+    public static DistanceMatrix euclideanFromARFF(ARFFInformation arff, double[][] data) {
         int n = arff.classLabels.size();
         int nFeatures = arff.featureNames.size();
         DenseDistanceMatrix m = new DenseDistanceMatrix(n);
-        for(int i = 0;i<n;i++) {
+        for (int i = 0; i < n; i++) {
             m.names[i] = "ARFFInstance" + i;
-            for(int j = i+1;j<n;j++) {
+            for (int j = i + 1; j < n; j++) {
                 double d = 0;
-                for(int f = 0;f<nFeatures;f++) {
-                    double fd = arff.originalData[i][f] - arff.originalData[j][f];
-                    d+=fd*fd;
+                for (int f = 0; f < nFeatures; f++) {
+                    double fd = data[i][f] - data[j][f];
+                    d += fd * fd;
                 }
                 d = Math.sqrt(d);
+                m.getMatrix()[i][j] = d;
+                m.getMatrix()[j][i] = d;
+            }
+        }
+        return m;
+    }
+    public static DistanceMatrix jaccardFromARFF(ARFFInformation arff, double[][] data) {
+        int n = arff.classLabels.size();
+        int nFeatures = arff.featureNames.size();
+        DenseDistanceMatrix m = new DenseDistanceMatrix(n);
+        for (int i = 0; i < n; i++) {
+            m.names[i] = "ARFFInstance" + i;
+            for (int j = i + 1; j < n; j++) {
+                double inter = 0;
+                double union = 0;
+                for (int f = 0; f < nFeatures; f++) {
+                    inter += Math.min(data[i][f], data[j][f]);
+                    union += Math.max(data[i][f], data[j][f]);
+                }
+                double d = 1-inter/union;
                 m.getMatrix()[i][j] = d;
                 m.getMatrix()[j][i] = d;
             }

@@ -89,12 +89,12 @@ public class DataToolsGUI extends JFrame {
 
         
         // add t-SNE positions:
-        JButton tsneButton = new JButton("Add t-SNE Positions");
-        tsneButton.addActionListener(new ActionListener() {
+        JButton tsneButton3d = new JButton("Add t-SNE (3d) Positions");
+        tsneButton3d.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 boolean found = false;
                 for(Pair<String, InstancePositions> tmp:m_parent.positions) {
-                    if (tmp.m_a.equals("t-SNE")) {
+                    if (tmp.m_a.equals("t-SNE(3d)")) {
                         found = true;
                         break;
                     }
@@ -103,14 +103,46 @@ public class DataToolsGUI extends JFrame {
                     double [][]m = tSNEMatrix(m_parent.originalData, 3, 20.0, 1000);
                     InstancePositions ip = new InstancePositions(m.length, m[0].length);
                     ip.positions = m;
-                    m_parent.positions.add(new Pair<>("t-SNE", ip));
-                    m_parent.controllers.add(new Pair<String, Visualization3DPositionController>("t-SNE", new InstancePositions3DController(ip, m_parent.visualization)));
-                    m_parent.controllerSelectionBox.addItem("t-SNE");
+                    m_parent.positions.add(new Pair<>("t-SNE(3d)", ip));
+                    m_parent.controllers.add(new Pair<String, Visualization3DPositionController>("t-SNE(3d)", new InstancePositions3DController(ip, m_parent.visualization)));
+                    m_parent.controllerSelectionBox.addItem("t-SNE(3d)");
                 }
             }
         });
-        if (m_parent.originalData==null) tsneButton.setEnabled(false);
-        p.add(tsneButton);
+        if (m_parent.originalData==null) tsneButton3d.setEnabled(false);
+        p.add(tsneButton3d);
+
+
+        // add t-SNE positions:
+        JButton tsneButton2d = new JButton("Add t-SNE (2d) Positions");
+        tsneButton2d.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                boolean found = false;
+                for(Pair<String, InstancePositions> tmp:m_parent.positions) {
+                    if (tmp.m_a.equals("t-SNE(2d)")) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    double [][]m2d = tSNEMatrix(m_parent.originalData, 2, 20.0, 1000);
+                    double [][]m = new double[m2d.length][3];
+                    for(int i = 0;i<m2d.length;i++) {
+                        m[i][0] = m2d[i][0];
+                        m[i][1] = m2d[i][1];
+                        m[i][2] = 0;
+                    }
+                    InstancePositions ip = new InstancePositions(m.length, m[0].length);
+                    ip.positions = m;
+                    m_parent.positions.add(new Pair<>("t-SNE(2d)", ip));
+                    m_parent.controllers.add(new Pair<String, Visualization3DPositionController>("t-SNE(2d)", new InstancePositions3DController(ip, m_parent.visualization)));
+                    m_parent.controllerSelectionBox.addItem("t-SNE(2d)");
+                }
+            }
+        });
+        if (m_parent.originalData==null) tsneButton3d.setEnabled(false);
+        p.add(tsneButton2d);
+        
         
         // add t-SNE from distance matrix positions:
         JButton tsneDButton = new JButton("Add t-SNE Positions from Distance Matrix");

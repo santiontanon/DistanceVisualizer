@@ -199,11 +199,11 @@ public class DistanceVisualization {
                 StringTokenizer st = new StringTokenizer(line);
                 st.nextToken();
                 String attribute = st.nextToken();
-                if (!attribute.equals("class")) {
+                if (!attribute.toLowerCase().equals("class")) {
                     ret.featureNames.add(attribute);
                     String dataType = st.nextToken();
                     if (!dataType.equals("NUMERIC")) {
-                        throw new Exception("non numeric attributes are not supported at this point when importing ARFF files!");
+                        throw new Exception("non numeric attributes are not supported at this point when importing ARFF files! " + line);
                     }
                 }
             } else if (line.startsWith("@DATA")) {

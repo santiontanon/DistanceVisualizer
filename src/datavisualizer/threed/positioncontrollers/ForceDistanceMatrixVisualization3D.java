@@ -34,6 +34,12 @@ public class ForceDistanceMatrixVisualization3D implements Visualization3DPositi
     }
     
     
+    public DistanceMatrix getMatrix()
+    {
+        return matrix;
+    }
+    
+    
     public void setMatrix(DistanceMatrix m) {
         matrix = m;
         matrixsq = m.square();

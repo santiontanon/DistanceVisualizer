@@ -140,35 +140,35 @@ public class DataToolsGUI extends JFrame {
                 }
             }
         });
-        if (m_parent.originalData==null) tsneButton3d.setEnabled(false);
+        if (m_parent.originalData==null) tsneButton2d.setEnabled(false);
         p.add(tsneButton2d);
         
         
         // add t-SNE from distance matrix positions:
-        JButton tsneDButton = new JButton("Add t-SNE Positions from Distance Matrix");
+        JButton tsneDButton = new JButton("Add t-SNE Positions from current Distance Matrix");
         tsneDButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 boolean found = false;
-                for(Pair<String, InstancePositions> tmp:m_parent.positions) {
-                    if (tmp.m_a.equals("t-SNE(from distance matrix)")) {
-                        found = true;
-                        break;
+                Pair<String, Visualization3DPositionController> currentControllerPair = m_parent.controllers.get(m_parent.controllerSelected);
+                if (currentControllerPair.m_b instanceof ForceDistanceMatrixVisualization3D) {
+                    ForceDistanceMatrixVisualization3D controller = (ForceDistanceMatrixVisualization3D)currentControllerPair.m_b;
+                    if (controller.getMatrix() instanceof DenseDistanceMatrix) {
+                        DenseDistanceMatrix ddm = (DenseDistanceMatrix)controller.getMatrix();
+                        for(Pair<String, InstancePositions> tmp:m_parent.positions) {
+                            if (tmp.m_a.equals("t-SNE("+currentControllerPair.m_a+")")) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            double [][]m = tSNEFromDistanceMatrix(ddm.getMatrix(), 3, 20.0, 500);
+                            InstancePositions ip = new InstancePositions(m.length, m[0].length);
+                            ip.positions = m;
+                            m_parent.positions.add(new Pair<>("t-SNE("+currentControllerPair.m_a+")", ip));
+                            m_parent.controllers.add(new Pair<String, Visualization3DPositionController>("t-SNE("+currentControllerPair.m_a+")", new InstancePositions3DController(ip, m_parent.visualization)));
+                            m_parent.controllerSelectionBox.addItem("t-SNE("+currentControllerPair.m_a+")");
+                        }
                     }
-                }
-                DenseDistanceMatrix ddm = null;
-                for(Pair<String, DistanceMatrix> tmp:m_parent.matrices) {
-                    if (tmp.m_b instanceof DenseDistanceMatrix) {
-                        ddm = (DenseDistanceMatrix)tmp.m_b;
-                        break;
-                    }
-                }
-                if (!found) {
-                    double [][]m = tSNEFromDistanceMatrix(ddm.getMatrix(), 3, 20.0, 500);
-                    InstancePositions ip = new InstancePositions(m.length, m[0].length);
-                    ip.positions = m;
-                    m_parent.positions.add(new Pair<>("t-SNE(from distance matrix)", ip));
-                    m_parent.controllers.add(new Pair<String, Visualization3DPositionController>("t-SNE(from distance matrix)", new InstancePositions3DController(ip, m_parent.visualization)));
-                    m_parent.controllerSelectionBox.addItem("t-SNE(from distance matrix)");
                 }
             }
         });

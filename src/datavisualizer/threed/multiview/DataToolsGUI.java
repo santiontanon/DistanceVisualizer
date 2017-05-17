@@ -173,6 +173,43 @@ public class DataToolsGUI extends JFrame {
             }
         });
         p.add(tsneDButton);
+        
+        
+        // add t-SNE from distance matrix positions:
+        JButton tsneD2dButton = new JButton("Add t-SNE Positions from current Distance Matrix (2D)");
+        tsneD2dButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                boolean found = false;
+                Pair<String, Visualization3DPositionController> currentControllerPair = m_parent.controllers.get(m_parent.controllerSelected);
+                if (currentControllerPair.m_b instanceof ForceDistanceMatrixVisualization3D) {
+                    ForceDistanceMatrixVisualization3D controller = (ForceDistanceMatrixVisualization3D)currentControllerPair.m_b;
+                    if (controller.getMatrix() instanceof DenseDistanceMatrix) {
+                        DenseDistanceMatrix ddm = (DenseDistanceMatrix)controller.getMatrix();
+                        for(Pair<String, InstancePositions> tmp:m_parent.positions) {
+                            if (tmp.m_a.equals("t-SNE(2d)("+currentControllerPair.m_a+")")) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            double [][]m = tSNEFromDistanceMatrix(ddm.getMatrix(), 2, 20.0, 500);
+                            double [][]m3d = new double[m.length][3];
+                            for(int i = 0;i<m.length;i++) {
+                                m3d[i][0] = m[i][0];
+                                m3d[i][1] = m[i][1];
+                                m3d[i][2] = 0;
+                            }
+                            InstancePositions ip = new InstancePositions(m3d.length, m3d[0].length);
+                            ip.positions = m3d;
+                            m_parent.positions.add(new Pair<>("t-SNE(2d)("+currentControllerPair.m_a+")", ip));
+                            m_parent.controllers.add(new Pair<String, Visualization3DPositionController>("t-SNE(2d)("+currentControllerPair.m_a+")", new InstancePositions3DController(ip, m_parent.visualization)));
+                            m_parent.controllerSelectionBox.addItem("t-SNE(2d)("+currentControllerPair.m_a+")");
+                        }
+                    }
+                }
+            }
+        });
+        p.add(tsneD2dButton);        
         add(p);
     }
     

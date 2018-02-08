@@ -48,9 +48,9 @@ public class Visualization3D extends JPanel {
     String []labels3 = null;
     public HashMap<String,Color> labelColors = new LinkedHashMap<>();
 
-    double []continuousLabels1 = null;
-    double []continuousLabels2 = null;
-    double []continuousLabels3 = null;
+    Double []continuousLabels1 = null;
+    Double []continuousLabels2 = null;
+    Double []continuousLabels3 = null;
     double minContinuousLabel1 = 0, maxContinuousLabel1= 1;
     double minContinuousLabel2 = 0, maxContinuousLabel2= 1;
     double minContinuousLabel3 = 0, maxContinuousLabel3= 1;
@@ -229,9 +229,13 @@ public class Visualization3D extends JPanel {
             for(int i = 0;i<cl1.size();i++) cl_array[i] = cl1.get(i);
             labels1 = cl_array;
             if (m_continuous1) {
-                continuousLabels1 = new double[names.length];
+                continuousLabels1 = new Double[names.length];
                 for(int i = 0;i<names.length;i++) {
-                    continuousLabels1[i] = Double.parseDouble(labels1[i]);
+                    if (labels1[i] != null) {
+                        continuousLabels1[i] = new Double(Double.parseDouble(labels1[i]));
+                    } else {
+                        continuousLabels1[i] = null;
+                    }
                 }            
             }
         }
@@ -243,9 +247,13 @@ public class Visualization3D extends JPanel {
             for(int i = 0;i<cl2.size();i++) cl_array[i] = cl2.get(i);
             labels2 = cl_array;
             if (m_continuous2) {
-                continuousLabels2 = new double[names.length];
+                continuousLabels2 = new Double[names.length];
                 for(int i = 0;i<names.length;i++) {
-                    continuousLabels2[i] = Double.parseDouble(labels2[i]);
+                    if (labels2[i] != null) {
+                        continuousLabels2[i] = new Double(Double.parseDouble(labels2[i]));
+                    } else {
+                        continuousLabels2[i] = null;
+                    }
                 }            
             }
         }
@@ -257,9 +265,13 @@ public class Visualization3D extends JPanel {
             for(int i = 0;i<cl3.size();i++) cl_array[i] = cl3.get(i);
             labels3 = cl_array;
             if (m_continuous3) {
-                continuousLabels3 = new double[names.length];
+                continuousLabels3 = new Double[names.length];
                 for(int i = 0;i<names.length;i++) {
-                    continuousLabels3[i] = Double.parseDouble(labels3[i]);
+                    if (labels3[i] != null) {
+                        continuousLabels3[i] = new Double(Double.parseDouble(labels3[i]));
+                    } else {
+                        continuousLabels3[i] = null;
+                    }
                 }            
             }
         }
@@ -373,18 +385,21 @@ public class Visualization3D extends JPanel {
             maxContinuousLabel2 = Double.MIN_VALUE;
             minContinuousLabel3 = Double.MAX_VALUE;
             maxContinuousLabel3 = Double.MIN_VALUE;
-            for(double cl:continuousLabels1) {
+            for(Double cl:continuousLabels1) {
+                if (cl==null) continue;
                 if (cl<minContinuousLabel1) minContinuousLabel1 = cl;
                 if (cl>maxContinuousLabel1) maxContinuousLabel1 = cl;
             }
             if (m_continuous2) {
-                for(double cl:continuousLabels2) {
+                for(Double cl:continuousLabels2) {
+                    if (cl==null) continue;
                     if (cl<minContinuousLabel2) minContinuousLabel2 = cl;
                     if (cl>maxContinuousLabel2) maxContinuousLabel2 = cl;
                 }
             }
             if (m_continuous3) {
-                for(double cl:continuousLabels3) {
+                for(Double cl:continuousLabels3) {
+                    if (cl==null) continue;
                     if (cl<minContinuousLabel3) minContinuousLabel3 = cl;
                     if (cl>maxContinuousLabel3) maxContinuousLabel3 = cl;
                 }
@@ -498,17 +513,32 @@ public class Visualization3D extends JPanel {
             } else {
                 solution = labels1[i];
                 if (m_continuous1) {
-                    int idx = (int)(COLOR_STEPS * (continuousLabels1[i] - minContinuousLabel1)/(maxContinuousLabel1 - minContinuousLabel1));
+                    int idx;
+                    if (continuousLabels1[i] == null) {
+                        idx = 0;
+                    } else {
+                        idx = (int)(COLOR_STEPS * (continuousLabels1[i] - minContinuousLabel1)/(maxContinuousLabel1 - minContinuousLabel1));
+                    }
                     if (m_reverse1) idx = COLOR_STEPS - idx;
                     if (idx<0) idx = 0;
                     if (idx>COLOR_STEPS) idx = COLOR_STEPS;
                     if (m_continuous2 && labels2!=null) {
-                        int idx2 = (int)(COLOR_STEPS * (continuousLabels2[i] - minContinuousLabel2)/(maxContinuousLabel2 - minContinuousLabel2));
+                        int idx2;
+                        if (continuousLabels2[i] == null) {
+                            idx2 = 0;
+                        } else {
+                            idx2 = (int)(COLOR_STEPS * (continuousLabels2[i] - minContinuousLabel2)/(maxContinuousLabel2 - minContinuousLabel2));
+                        }
                         if (m_reverse2) idx2 = COLOR_STEPS - idx2;
                         if (idx2<0) idx2 = 0;
                         if (idx2>COLOR_STEPS) idx2 = COLOR_STEPS;
                         if (m_continuous3 && labels3!=null) {
-                            int idx3 = (int)(COLOR_STEPS * (continuousLabels3[i] - minContinuousLabel3)/(maxContinuousLabel3 - minContinuousLabel3));
+                            int idx3;
+                            if (continuousLabels3[i] == null) {
+                                idx3 = 0;
+                            } else {
+                                idx3 = (int)(COLOR_STEPS * (continuousLabels3[i] - minContinuousLabel3)/(maxContinuousLabel3 - minContinuousLabel3));
+                            }
                             if (m_reverse3) idx3 = COLOR_STEPS - idx3;
                             if (idx3<0) idx3 = 0;
                             if (idx3>COLOR_STEPS) idx3 = COLOR_STEPS;

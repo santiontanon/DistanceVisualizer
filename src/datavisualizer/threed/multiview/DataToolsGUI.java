@@ -6,6 +6,7 @@
 package datavisualizer.threed.multiview;
 
 import datavisualizer.DenseDistanceMatrix;
+import datavisualizer.DistanceCalculations;
 import datavisualizer.DistanceMatrix;
 import datavisualizer.InstancePositions;
 import datavisualizer.threed.positioncontrollers.ForceDistanceMatrixVisualization3D;
@@ -14,6 +15,8 @@ import datavisualizer.threed.positioncontrollers.Visualization3DPositionControll
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -214,40 +217,41 @@ public class DataToolsGUI extends JFrame {
     }
     
     
-    double [][] euclideanMatrix(double [][]data)
-    {
+    public static double[][] euclideanMatrix(Object[][] dataRaw) {
+        double data[][] = DistanceCalculations.oneHotEncodingNumericMatrix(dataRaw);
         int n = data.length;
-        int nf = data[0].length;
-                
-        double m[][] = new double[n][n];
-        
-        for(int i = 0;i<n;i++) {
-            m[i][i] = 0;
-            for(int j = i+1;j<n;j++) {
+        int nFeatures = data[0].length;
+        DenseDistanceMatrix m = new DenseDistanceMatrix(n);
+        for (int i = 0; i < n; i++) {
+            m.names[i] = "ARFFInstance" + i;
+            for (int j = i + 1; j < n; j++) {
                 double d = 0;
-                for(int k = 0;k<nf;k++) {
-                    d += (data[i][k]-data[j][k])*(data[i][k]-data[j][k]);
+                for (int f = 0; f < nFeatures; f++) {
+                    double fd = (Double)data[i][f] - (Double)data[j][f];
+                    d += fd * fd;
                 }
                 d = Math.sqrt(d);
-                m[i][j] = d;
-                m[j][i] = d;
+                m.getMatrix()[i][j] = d;
+                m.getMatrix()[j][i] = d;
             }
         }
-        
-        return m;
-    }
+        return m.getMatrix();
+    }    
+    
 
     
-    double [][] PCAMatrix(double [][]data, int no_dims)
+    double [][] PCAMatrix(Object [][]dataRaw, int no_dims)
     {
+        double data[][] = DistanceCalculations.oneHotEncodingNumericMatrix(dataRaw);
         PrincipalComponentAnalysis pca = new PrincipalComponentAnalysis();
         double [][]Y = pca.pca(data, no_dims);
         return Y;
     }
     
     
-    double [][] tSNEMatrix(double [][]data, int no_dims, double perplexity, int iterations)
+    double [][] tSNEMatrix(Object [][]dataRaw, int no_dims, double perplexity, int iterations)
     {
+        double data[][] = DistanceCalculations.oneHotEncodingNumericMatrix(dataRaw);
         BHTSne tsne = new BHTSne();
         
         double maxValue = 0;

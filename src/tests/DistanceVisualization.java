@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -29,7 +30,7 @@ public class DistanceVisualization {
 
     public static class ARFFInformation {
         List<String> featureNames = null;
-        double originalData[][] = null;
+        Object originalData[][] = null;
         List<String> classLabels = null;
     }
     
@@ -38,6 +39,7 @@ public class DistanceVisualization {
         List<Pair<String, DistanceMatrix>> matrices = new LinkedList<>();
         List<Pair<String, List<String>>> labels = new LinkedList<>();
         List<String> names = new LinkedList<>();       
+        List<String> arffFeaturesToIgnoreForDistance = new ArrayList<>();
         ARFFInformation arff = null;
         boolean ThreeD = false;
         
@@ -51,21 +53,27 @@ public class DistanceVisualization {
                 String labelsFileName = args[i+1];
                 loadLabels(labelsFileName, labelsFileName, labels);                
                 i++;
+            } else if (args[i].equals("-arffIgnoreFeaturesForDistance")) {
+                StringTokenizer st = new StringTokenizer(args[i+1],",");
+                while(st.hasMoreTokens()) {
+                    arffFeaturesToIgnoreForDistance.add(st.nextToken());
+                }
+                i++;
             } else if (args[i].equals("-arff")) {
                 File arffFile = new File(args[i+1]);
                 arff = loadDataFromArff(arffFile.getAbsolutePath());
-                double[][] norm_minmax = normalizeARFF(arff,NORMALIZE_MIN_MAX);
-                double[][] norm_avgstd = normalizeARFF(arff,NORMALIZE_AVG_STD);
-                DistanceMatrix m = euclideanFromARFF(arff, arff.originalData);
+                Object[][] norm_minmax = normalizeARFF(arff,NORMALIZE_MIN_MAX);
+                Object[][] norm_avgstd = normalizeARFF(arff,NORMALIZE_AVG_STD);
+                DistanceMatrix m = euclideanFromARFF(arff, arff.originalData, arffFeaturesToIgnoreForDistance);
                 matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance", m));
                 matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance-norm-minmax", 
-                        euclideanFromARFF(arff,norm_minmax)));
+                        euclideanFromARFF(arff,norm_minmax, arffFeaturesToIgnoreForDistance)));
                 matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance-norm-std", 
-                        euclideanFromARFF(arff,norm_avgstd)));
+                        euclideanFromARFF(arff,norm_avgstd, arffFeaturesToIgnoreForDistance)));
                 matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-jaccard-distance", 
-                        jaccardFromARFF(arff, arff.originalData)));
+                        jaccardFromARFF(arff, arff.originalData, arffFeaturesToIgnoreForDistance)));
                 matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-jaccard-distance-norm-minmax", 
-                        jaccardFromARFF(arff,norm_minmax)));
+                        jaccardFromARFF(arff,norm_minmax, arffFeaturesToIgnoreForDistance)));
 
                 labels.add(new Pair<>("ARFF-class-labels",arff.classLabels));
                 if (names.isEmpty()) {
@@ -80,15 +88,17 @@ public class DistanceVisualization {
             }
         }
         
+        /*
         if (matrices.size()==0) {
             if (arff==null) {
                 System.out.println("No distance matrix specified!! Please specify at least one distance matrix as: '-DM <distance matrix file>");
                 System.exit(1);
             }
         } 
-        
+        */
+ 
         setIndexLabels("index", matrices, labels);
-            
+         
         createVisualization(new ArrayList<>(), matrices, labels, names, arff, ThreeD);        
     }
 
@@ -173,10 +183,13 @@ public class DistanceVisualization {
         List<Pair<String, DistanceMatrix>> matrices,
         List<Pair<String, List<String>>> all_labels) {
         List<String> labels = new ArrayList<>();
-        for (int i = 0; i < matrices.get(0).m_b.names.length; i++) {
-            labels.add("" + i);
+        if (!matrices.isEmpty()) {
+            for (int i = 0; i < matrices.get(0).m_b.names.length; i++) labels.add("" + i);
+            all_labels.add(new Pair<String, List<String>>(name, labels));
+        } else if (!all_labels.isEmpty()) {
+            for (int i = 0; i < all_labels.get(0).m_b.size(); i++) labels.add("" + i);
+            all_labels.add(new Pair<String, List<String>>(name, labels));
         }
-        all_labels.add(new Pair<String, List<String>>(name, labels));
     }       
     
 
@@ -188,7 +201,7 @@ public class DistanceVisualization {
         BufferedReader br = new BufferedReader(new FileReader(arffFile));
         ret.featureNames = new ArrayList<>();
         ret.classLabels = new ArrayList<>();
-        List<double []> instances = new ArrayList<>();
+        List<Object []> instances = new ArrayList<>();
         
         while(true){
             String line = br.readLine();
@@ -201,31 +214,42 @@ public class DistanceVisualization {
                 String attribute = st.nextToken();
                 if (!attribute.toLowerCase().equals("class")) {
                     ret.featureNames.add(attribute);
-                    String dataType = st.nextToken();
-                    if (!dataType.toLowerCase().equals("numeric")) {
-                        throw new Exception("non numeric attributes are not supported at this point when importing ARFF files! " + line);
-                    }
+//                    String dataType = st.nextToken();
+//                    if (!dataType.toLowerCase().equals("numeric")) {
+//                        throw new Exception("non numeric attributes are not supported at this point when importing ARFF files! " + line);
+//                    }
                 }
             } else if (line.startsWith("@DATA") || line.startsWith("@data")) {
                 break;
             }
         }
-
+        
         while (true) {
             String line = br.readLine();
             if (line == null) {
                 break;
             }
+            System.out.println(line + " -> " + ret.featureNames.size());
             StringTokenizer st = new StringTokenizer(line, ",");
-            double instance[] = new double[ret.featureNames.size()];
+            Object instance[] = new Object[ret.featureNames.size()];
             for (int i = 0; i < instance.length; i++) {
-                instance[i] = Double.parseDouble(st.nextToken());
+                String token = st.nextToken();
+                try {
+                    instance[i] = new Double(Double.parseDouble(token));
+                } catch(Exception e) {
+                    if (token.equals("?")) {
+                        instance[i] = null;
+                    } else {
+                        instance[i] = token;
+                    }
+                }
+//                if (ret.featureNames.get(i).equals("id") || ret.featureNames.get(i).equals("user")) instance[i] = 0;
             }
             instances.add(instance);
             ret.classLabels.add(st.nextToken());
         }
 
-        ret.originalData = new double[instances.size()][ret.featureNames.size()];
+        ret.originalData = new Object[instances.size()][ret.featureNames.size()];
         for (int i = 0; i < ret.originalData.length; i++) {
             for (int j = 0; j < ret.originalData[i].length; j++) {
                 ret.originalData[i][j] = instances.get(i)[j];
@@ -237,56 +261,81 @@ public class DistanceVisualization {
     public final static int NORMALIZE_MIN_MAX = 1;
     public final static int NORMALIZE_AVG_STD = 2;
     
-    private static double[][] normalizeARFF(ARFFInformation arff, int normalization) {
+    private static Object[][] normalizeARFF(ARFFInformation arff, int normalization) {
         int n = arff.classLabels.size();
         int nFeatures = arff.featureNames.size();
-        double data[][] = new double[n][nFeatures];
-        for (int i = 0; i < n; i++) {
-            for (int f = 0; f < nFeatures; f++) {
+        boolean numeric[] = new boolean[nFeatures];
+        Object data[][] = new Object[n][nFeatures];
+        for (int f = 0; f < nFeatures; f++) {
+            numeric[f] = true;
+            for (int i = 0; i < n; i++) {
                 data[i][f] = arff.originalData[i][f];
+                if (data[i][f]!=null &&
+                    data[i][f] instanceof String) numeric[f] = false;
             }
         }
         if (normalization > 0) {
-            double norm_maximums[] = new double[nFeatures];
-            double norm_minimums[] = new double[nFeatures];
-            double norm_avg[] = new double[nFeatures];
-            double norm_std[] = new double[nFeatures];
+            Double norm_maximums[] = new Double[nFeatures];
+            Double norm_minimums[] = new Double[nFeatures];
+            Double norm_avg[] = new Double[nFeatures];
+            Double norm_std[] = new Double[nFeatures];
+            int nNumeric[] = new int[nFeatures];
             for (int f = 0; f < nFeatures; f++) {
-                norm_maximums[f] = Double.MIN_VALUE;
-                norm_minimums[f] = Double.MAX_VALUE;
-                norm_avg[f] = 0;
-                norm_std[f] = 0;
-            }
+                if (numeric[f]) {
+                    norm_maximums[f] = Double.MIN_VALUE;
+                    norm_minimums[f] = Double.MAX_VALUE;
+                    norm_avg[f] = new Double(0);
+                    norm_std[f] = new Double(0);
+                } else {
+                    norm_maximums[f] = null;
+                    norm_minimums[f] = null;
+                    norm_avg[f] = null;
+                    norm_std[f] = null;
+                }
+            }   
             for (int i = 0; i < n; i++) {
                 for (int f = 0; f < nFeatures; f++) {
-                    if (data[i][f] > norm_maximums[f]) {
-                        norm_maximums[f] = data[i][f];
+                    if (numeric[f] && data[i][f]!=null) {
+                        nNumeric[f]++;
+                        if ((Double)data[i][f] > norm_maximums[f]) {
+                            norm_maximums[f] = (Double)data[i][f];
+                        }
+                        if ((Double)data[i][f] < norm_minimums[f]) {
+                            norm_minimums[f] = (Double)data[i][f];
+                        }
+                        norm_avg[f] += (Double)data[i][f];
                     }
-                    if (data[i][f] < norm_minimums[f]) {
-                        norm_minimums[f] = data[i][f];
-                    }
-                    norm_avg[f] += data[i][f];
                 }
             }
             for (int f = 0; f < nFeatures; f++) {
-                norm_avg[f] /= n;
-            }
-            for (int f = 0; f < nFeatures; f++) {
-                for (int i = 0; i < n; i++) {
-                    double delta = data[i][f] - norm_avg[f];
-                    norm_std[f] += delta * delta;
+                if (numeric[f]) {
+                    norm_avg[f] /= nNumeric[f];
                 }
             }
             for (int f = 0; f < nFeatures; f++) {
-                norm_std[f] = Math.sqrt(norm_std[f]);
+                if (numeric[f]) {
+                    for (int i = 0; i < n; i++) {
+                        if (data[i][f]!=null) {
+                            double delta = (Double)data[i][f] - norm_avg[f];
+                            norm_std[f] += delta * delta;
+                        }
+                    }
+                }
+            }
+            for (int f = 0; f < nFeatures; f++) {
+                if (numeric[f]) {
+                    norm_std[f] = Math.sqrt(norm_std[f]);
+                }
             }
 
             for (int i = 0; i < n; i++) {
                 for (int f = 0; f < nFeatures; f++) {
-                    if (normalization == NORMALIZE_MIN_MAX) {
-                        data[i][f] = (data[i][f] - norm_minimums[f]) / (norm_maximums[f] - norm_minimums[f]);
-                    } else if (normalization == NORMALIZE_AVG_STD) {
-                        data[i][f] = (data[i][f] - norm_avg[f]) / norm_std[f];
+                    if (numeric[f] && data[i][f]!=null) {
+                        if (normalization == NORMALIZE_MIN_MAX) {
+                            data[i][f] = ((Double)data[i][f] - norm_minimums[f]) / (norm_maximums[f] - norm_minimums[f]);
+                        } else if (normalization == NORMALIZE_AVG_STD) {
+                            data[i][f] = ((Double)data[i][f] - norm_avg[f]) / norm_std[f];
+                        }
                     }
                 }
             }
@@ -295,17 +344,44 @@ public class DistanceVisualization {
         return data;
     }
 
-    public static DistanceMatrix euclideanFromARFF(ARFFInformation arff, double[][] data) {
+    
+    public static DistanceMatrix euclideanFromARFF(ARFFInformation arff, Object[][] data, List<String> arffFeaturesToIgnoreForDistance) {
         int n = arff.classLabels.size();
         int nFeatures = arff.featureNames.size();
+        boolean numeric[] = new boolean[nFeatures];
+        boolean ignore[] = new boolean[nFeatures];
+        for (int f = 0; f < nFeatures; f++) {
+            numeric[f] = true;
+            ignore[f] = false;
+            if (arffFeaturesToIgnoreForDistance.contains(arff.featureNames.get(f))) ignore[f] = true;
+            for (int i = 0; i < n; i++) {
+                if (data[i][f]!=null &&
+                    data[i][f] instanceof String) {
+                    if (numeric[f]) {
+                        System.out.println("feature " + arff.featureNames.get(f) + " is not numeric because of '" + data[i][f] + "'");
+                    }
+                    numeric[f] = false;
+                }
+            }
+        }
+
+        System.out.println(Arrays.toString(ignore));
+        
         DenseDistanceMatrix m = new DenseDistanceMatrix(n);
         for (int i = 0; i < n; i++) {
             m.names[i] = "ARFFInstance" + i;
             for (int j = i + 1; j < n; j++) {
                 double d = 0;
                 for (int f = 0; f < nFeatures; f++) {
-                    double fd = data[i][f] - data[j][f];
-                    d += fd * fd;
+                    if (ignore[f]) continue;
+                    if (data[i][f]!=null && data[j][f]!=null) {
+                        if (numeric[f]) {
+                            double fd = (Double)data[i][f] - (Double)data[j][f];
+                            d += fd * fd;
+                        } else {
+                            if (!data[i][f].equals(data[j][f])) d+=1;
+                        }
+                    }
                 }
                 d = Math.sqrt(d);
                 m.getMatrix()[i][j] = d;
@@ -315,9 +391,21 @@ public class DistanceVisualization {
         return m;
     }
 
-    public static DistanceMatrix jaccardFromARFF(ARFFInformation arff, double[][] data) {
+    
+    public static DistanceMatrix jaccardFromARFF(ARFFInformation arff, Object[][] data, List<String> arffFeaturesToIgnoreForDistance) {
         int n = arff.classLabels.size();
         int nFeatures = arff.featureNames.size();
+        boolean numeric[] = new boolean[nFeatures];
+        boolean ignore[] = new boolean[nFeatures];
+        for (int f = 0; f < nFeatures; f++) {
+            numeric[f] = true;
+            ignore[f] = false;
+            if (arffFeaturesToIgnoreForDistance.contains(arff.featureNames.get(f))) ignore[f] = true;
+            for (int i = 0; i < n; i++) {
+                if (data[i][f]!=null &&
+                    data[i][f] instanceof String) numeric[f] = false;
+            }
+        }
         DenseDistanceMatrix m = new DenseDistanceMatrix(n);
         for (int i = 0; i < n; i++) {
             m.names[i] = "ARFFInstance" + i;
@@ -325,8 +413,20 @@ public class DistanceVisualization {
                 double inter = 0;
                 double union = 0;
                 for (int f = 0; f < nFeatures; f++) {
-                    inter += Math.min(data[i][f], data[j][f]);
-                    union += Math.max(data[i][f], data[j][f]);
+                    if (ignore[f]) continue;
+                    if (data[i][f]!=null && data[j][f]!=null) {
+                        if (numeric[f]) {
+                            inter += Math.min((Double)data[i][f], (Double)data[j][f]);
+                            union += Math.max((Double)data[i][f], (Double)data[j][f]);
+                        } else {
+                            if (data[i][f].equals(data[j][f])) {
+                                inter+=1;
+                                union+=1;
+                            } else {
+                                union+=1;
+                            }
+                        }
+                    }
                 }
                 double d = 1-inter/union;
                 m.getMatrix()[i][j] = d;

@@ -35,7 +35,7 @@ public class Visualization3DMultiViewGUI extends JFrame {
 
     List<String> names = null;
     List<String> featureNames = null;
-    double originalData[][] = null; // if available (and representable as numeric feature vectors), this holds the original data as a double matrix
+    Object originalData[][] = null; // if available, this holds the original data as a matrix (they could be "Double" or "String")
     
     List<Pair<String, DistanceMatrix>> matrices = null;
     List<Pair<String, InstancePositions>> positions = null;
@@ -64,7 +64,7 @@ public class Visualization3DMultiViewGUI extends JFrame {
             List<Pair<String, List<String>>> a_labels,
             List<String> a_names, 
             List<String> a_featureNames,
-            double a_originalData[][],
+            Object a_originalData[][],
             int n_views) {
         super(name);
         accessibleThis = this;
@@ -85,7 +85,11 @@ public class Visualization3DMultiViewGUI extends JFrame {
                 String feature = featureNames.get(i);
                 List<String> l = new ArrayList<>();
                 for(int j = 0;j<originalData.length;j++) {
-                    l.add("" + originalData[j][i]);
+                    if (originalData[j][i]==null) {
+                        l.add(null);
+                    } else {
+                        l.add("" + originalData[j][i]);
+                    }
                 }
                 labelSets.add(new Pair<>(feature, l));
             }            

@@ -176,7 +176,7 @@ public class Visualization3DMultiViewGUIView extends JPanel {
 
     public static boolean areLabelsContinuous(List<String> labels) {
         for (String label : labels) {
-            if (!IsNumber.isNumber(label)) {
+            if (label!=null && !IsNumber.isNumber(label)) {
                 return false;
             }
         }

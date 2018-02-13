@@ -14,7 +14,7 @@ import java.util.List;
  * @author santi
  */
 public class DistanceCalculations {
-    public static double[][] oneHotEncodingNumericMatrix(Object[][] data)
+    public static double[][] oneHotEncodingNumericMatrix(Object[][] data, List<String> featureNames, List<String> outputFeatures)
     {
         int n = data.length;
         int nFeatures = data[0].length;
@@ -52,6 +52,7 @@ public class DistanceCalculations {
         
         int of = 0;
         for (int f = 0; f < nFeatures; f++) {
+            if (outputFeatures.contains(featureNames.get(f))) continue;
             if (numeric[f]) {
                 for (int i = 0; i < n; i++) {
                     if (data[i][f]!=null) {

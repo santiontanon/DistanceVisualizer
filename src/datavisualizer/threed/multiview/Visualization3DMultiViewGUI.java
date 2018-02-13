@@ -35,6 +35,7 @@ public class Visualization3DMultiViewGUI extends JFrame {
 
     List<String> names = null;
     List<String> featureNames = null;
+    List<String> outputFeatureNames = null;
     Object originalData[][] = null; // if available, this holds the original data as a matrix (they could be "Double" or "String")
     
     List<Pair<String, DistanceMatrix>> matrices = null;
@@ -65,6 +66,7 @@ public class Visualization3DMultiViewGUI extends JFrame {
             List<String> a_names, 
             List<String> a_featureNames,
             Object a_originalData[][],
+            List<String> a_outputFeatures,  // these features are considered "output", and should not be used to calculate distances, PCA or t-SNE
             int n_views) {
         super(name);
         accessibleThis = this;
@@ -76,6 +78,7 @@ public class Visualization3DMultiViewGUI extends JFrame {
 
         names = a_names;
         featureNames = a_featureNames;
+        outputFeatureNames = a_outputFeatures;
         originalData = a_originalData;
         labelSets = a_labels;
 

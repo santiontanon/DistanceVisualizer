@@ -30,6 +30,7 @@ public class DistanceVisualization {
 
     public static class ARFFInformation {
         List<String> featureNames = null;
+        List<String> outputFeatures = null;
         Object originalData[][] = null;
         List<String> classLabels = null;
     }
@@ -39,10 +40,10 @@ public class DistanceVisualization {
         List<Pair<String, DistanceMatrix>> matrices = new LinkedList<>();
         List<Pair<String, List<String>>> labels = new LinkedList<>();
         List<String> names = new LinkedList<>();       
-        List<String> arffFeaturesToIgnoreForDistance = new ArrayList<>();
+        List<String> outputFeatures = new ArrayList<>();
         ARFFInformation arff = null;
         boolean ThreeD = false;
-        
+        outputFeatures.add("class");
         
         for(int i = 0;i<args.length;i++) {
             if (args[i].equals("-DM")) {
@@ -53,27 +54,29 @@ public class DistanceVisualization {
                 String labelsFileName = args[i+1];
                 loadLabels(labelsFileName, labelsFileName, labels);                
                 i++;
-            } else if (args[i].equals("-arffIgnoreFeaturesForDistance")) {
+            } else if (args[i].equals("-arffOutputFeatures")) {
                 StringTokenizer st = new StringTokenizer(args[i+1],",");
                 while(st.hasMoreTokens()) {
-                    arffFeaturesToIgnoreForDistance.add(st.nextToken());
+                    String fn = st.nextToken();
+                    if (!outputFeatures.contains(fn)) outputFeatures.add(fn);
                 }
                 i++;
             } else if (args[i].equals("-arff")) {
                 File arffFile = new File(args[i+1]);
                 arff = loadDataFromArff(arffFile.getAbsolutePath());
+                arff.outputFeatures = outputFeatures;
                 Object[][] norm_minmax = normalizeARFF(arff,NORMALIZE_MIN_MAX);
                 Object[][] norm_avgstd = normalizeARFF(arff,NORMALIZE_AVG_STD);
-                DistanceMatrix m = euclideanFromARFF(arff, arff.originalData, arffFeaturesToIgnoreForDistance);
+                DistanceMatrix m = euclideanFromARFF(arff, arff.originalData);
                 matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance", m));
                 matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance-norm-minmax", 
-                        euclideanFromARFF(arff,norm_minmax, arffFeaturesToIgnoreForDistance)));
+                        euclideanFromARFF(arff,norm_minmax)));
                 matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance-norm-std", 
-                        euclideanFromARFF(arff,norm_avgstd, arffFeaturesToIgnoreForDistance)));
+                        euclideanFromARFF(arff,norm_avgstd)));
                 matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-jaccard-distance", 
-                        jaccardFromARFF(arff, arff.originalData, arffFeaturesToIgnoreForDistance)));
+                        jaccardFromARFF(arff, arff.originalData, outputFeatures)));
                 matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-jaccard-distance-norm-minmax", 
-                        jaccardFromARFF(arff,norm_minmax, arffFeaturesToIgnoreForDistance)));
+                        jaccardFromARFF(arff,norm_minmax, outputFeatures)));
 
                 labels.add(new Pair<>("ARFF-class-labels",arff.classLabels));
                 if (names.isEmpty()) {
@@ -99,7 +102,7 @@ public class DistanceVisualization {
  
         setIndexLabels("index", matrices, labels);
          
-        createVisualization(new ArrayList<>(), matrices, labels, names, arff, ThreeD);        
+        createVisualization(new ArrayList<>(), matrices, labels, names, arff, outputFeatures, ThreeD);        
     }
 
 
@@ -108,14 +111,15 @@ public class DistanceVisualization {
                                            List<Pair<String, List<String>>> labels, 
                                            List<String> names, 
                                            ARFFInformation arff,
+                                           List<String> outputFeatures, 
                                            boolean ThreeD) {
         if (ThreeD) {
             Visualization3DMultiViewGUI.SHOW_KEY = true;
             Visualization3DMultiViewGUI w;
             if (arff==null) {
-                w = new Visualization3DMultiViewGUI("Data Visualization", matrices, positions, labels, names, null, null, 1);
+                w = new Visualization3DMultiViewGUI("Data Visualization", matrices, positions, labels, names, null, null, null, 1);
             } else {
-                w = new Visualization3DMultiViewGUI("Data Visualization", matrices, positions, labels, names, arff.featureNames, arff.originalData, 1);
+                w = new Visualization3DMultiViewGUI("Data Visualization", matrices, positions, labels, names, arff.featureNames, arff.originalData, arff.outputFeatures, 1);
             }
 //            w.visualization.KEY_THRESHOLD = 1;
             w.setResizable(true);
@@ -353,7 +357,7 @@ public class DistanceVisualization {
     }
 
     
-    public static DistanceMatrix euclideanFromARFF(ARFFInformation arff, Object[][] data, List<String> arffFeaturesToIgnoreForDistance) {
+    public static DistanceMatrix euclideanFromARFF(ARFFInformation arff, Object[][] data) {
         int n = arff.classLabels.size();
         int nFeatures = arff.featureNames.size();
         boolean numeric[] = new boolean[nFeatures];
@@ -361,7 +365,7 @@ public class DistanceVisualization {
         for (int f = 0; f < nFeatures; f++) {
             numeric[f] = true;
             ignore[f] = false;
-            if (arffFeaturesToIgnoreForDistance.contains(arff.featureNames.get(f))) ignore[f] = true;
+            if (arff.outputFeatures.contains(arff.featureNames.get(f))) ignore[f] = true;
             for (int i = 0; i < n; i++) {
                 if (data[i][f]!=null &&
                     data[i][f] instanceof String) {

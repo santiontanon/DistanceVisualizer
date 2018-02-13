@@ -55,7 +55,7 @@ public class DataToolsGUI extends JFrame {
                     }
                 }
                 if (!found) {
-                    double [][]m = euclideanMatrix(m_parent.originalData);
+                    double [][]m = euclideanMatrix(m_parent.originalData, m_parent.featureNames, m_parent.outputFeatureNames);
                     DistanceMatrix dm = new DenseDistanceMatrix(m_parent.names, m);
                     m_parent.matrices.add(new Pair<>("Euclidean", dm));
                     m_parent.controllers.add(new Pair<String, Visualization3DPositionController>("Euclidean", new ForceDistanceMatrixVisualization3D(dm, m_parent.visualization)));
@@ -78,7 +78,7 @@ public class DataToolsGUI extends JFrame {
                     }
                 }
                 if (!found) {
-                    double [][]m = PCAMatrix(m_parent.originalData, 3);
+                    double [][]m = PCAMatrix(m_parent.originalData, m_parent.featureNames, m_parent.outputFeatureNames, 3);
                     InstancePositions ip = new InstancePositions(m.length, m[0].length);
                     ip.positions = m;
                     m_parent.positions.add(new Pair<>("PCA", ip));
@@ -103,7 +103,7 @@ public class DataToolsGUI extends JFrame {
                     }
                 }
                 if (!found) {
-                    double [][]m = tSNEMatrix(m_parent.originalData, 3, 20.0, 1000);
+                    double [][]m = tSNEMatrix(m_parent.originalData, m_parent.featureNames, m_parent.outputFeatureNames, 3, 20.0, 1000);
                     InstancePositions ip = new InstancePositions(m.length, m[0].length);
                     ip.positions = m;
                     m_parent.positions.add(new Pair<>("t-SNE(3d)", ip));
@@ -128,7 +128,7 @@ public class DataToolsGUI extends JFrame {
                     }
                 }
                 if (!found) {
-                    double [][]m2d = tSNEMatrix(m_parent.originalData, 2, 20.0, 1000);
+                    double [][]m2d = tSNEMatrix(m_parent.originalData, m_parent.featureNames, m_parent.outputFeatureNames, 2, 20.0, 1000);
                     double [][]m = new double[m2d.length][3];
                     for(int i = 0;i<m2d.length;i++) {
                         m[i][0] = m2d[i][0];
@@ -217,8 +217,8 @@ public class DataToolsGUI extends JFrame {
     }
     
     
-    public static double[][] euclideanMatrix(Object[][] dataRaw) {
-        double data[][] = DistanceCalculations.oneHotEncodingNumericMatrix(dataRaw);
+    public static double[][] euclideanMatrix(Object[][] dataRaw, List<String> featureNames, List<String> outputFeatures) {
+        double data[][] = DistanceCalculations.oneHotEncodingNumericMatrix(dataRaw, featureNames, outputFeatures);
         int n = data.length;
         int nFeatures = data[0].length;
         DenseDistanceMatrix m = new DenseDistanceMatrix(n);
@@ -240,18 +240,18 @@ public class DataToolsGUI extends JFrame {
     
 
     
-    double [][] PCAMatrix(Object [][]dataRaw, int no_dims)
+    double [][] PCAMatrix(Object [][]dataRaw, List<String> featureNames, List<String> outputFeatures, int no_dims)
     {
-        double data[][] = DistanceCalculations.oneHotEncodingNumericMatrix(dataRaw);
+        double data[][] = DistanceCalculations.oneHotEncodingNumericMatrix(dataRaw, featureNames, outputFeatures);
         PrincipalComponentAnalysis pca = new PrincipalComponentAnalysis();
         double [][]Y = pca.pca(data, no_dims);
         return Y;
     }
     
     
-    double [][] tSNEMatrix(Object [][]dataRaw, int no_dims, double perplexity, int iterations)
+    double [][] tSNEMatrix(Object [][]dataRaw, List<String> featureNames, List<String> outputFeatures, int no_dims, double perplexity, int iterations)
     {
-        double data[][] = DistanceCalculations.oneHotEncodingNumericMatrix(dataRaw);
+        double data[][] = DistanceCalculations.oneHotEncodingNumericMatrix(dataRaw, featureNames, outputFeatures);
         BHTSne tsne = new BHTSne();
         
         double maxValue = 0;

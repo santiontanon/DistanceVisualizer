@@ -332,9 +332,17 @@ public class DistanceVisualization {
                 for (int f = 0; f < nFeatures; f++) {
                     if (numeric[f] && data[i][f]!=null) {
                         if (normalization == NORMALIZE_MIN_MAX) {
-                            data[i][f] = ((Double)data[i][f] - norm_minimums[f]) / (norm_maximums[f] - norm_minimums[f]);
+                            if ((norm_maximums[f] - norm_minimums[f])>0) {
+                                data[i][f] = ((Double)data[i][f] - norm_minimums[f]) / (norm_maximums[f] - norm_minimums[f]);
+                            } else {
+                                data[i][f] = 0.0d;
+                            }
                         } else if (normalization == NORMALIZE_AVG_STD) {
-                            data[i][f] = ((Double)data[i][f] - norm_avg[f]) / norm_std[f];
+                            if (norm_std[f]>0) {
+                                data[i][f] = ((Double)data[i][f] - norm_avg[f]) / norm_std[f];
+                            } else {
+                                data[i][f] = 0.0d;
+                            }
                         }
                     }
                 }

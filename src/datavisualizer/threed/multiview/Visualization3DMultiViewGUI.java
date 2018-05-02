@@ -37,6 +37,7 @@ public class Visualization3DMultiViewGUI extends JFrame {
     List<String> featureNames = null;
     List<String> outputFeatureNames = null;
     Object originalData[][] = null; // if available, this holds the original data as a matrix (they could be "Double" or "String")
+    String imagesFolder = null;
     
     List<Pair<String, DistanceMatrix>> matrices = null;
     List<Pair<String, InstancePositions>> positions = null;
@@ -67,6 +68,7 @@ public class Visualization3DMultiViewGUI extends JFrame {
             List<String> a_featureNames,
             Object a_originalData[][],
             List<String> a_outputFeatures,  // these features are considered "output", and should not be used to calculate distances, PCA or t-SNE
+            String a_imagesFolder, 
             int n_views) {
         super(name);
         accessibleThis = this;
@@ -82,6 +84,8 @@ public class Visualization3DMultiViewGUI extends JFrame {
         originalData = a_originalData;
         labelSets = a_labels;
 
+        imagesFolder = a_imagesFolder;
+        
         // if the original data is available, use it as labels:
         if (originalData!=null && featureNames!=null) {
             for(int i = 0;i<featureNames.size();i++) {
@@ -115,7 +119,7 @@ public class Visualization3DMultiViewGUI extends JFrame {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
         // create the visualization:
-        visualization = new Visualization3D(labelSets.get(0).m_b, names, new ArrayList<>(), Visualization3DMultiViewGUIView.areLabelsContinuous(labelSets.get(0).m_b));
+        visualization = new Visualization3D(labelSets.get(0).m_b, names, new ArrayList<>(), Visualization3DMultiViewGUIView.areLabelsContinuous(labelSets.get(0).m_b), imagesFolder);
         visualization.SHOW_KEY = SHOW_KEY;
 
         // controllers:

@@ -41,6 +41,7 @@ public class DistanceVisualization {
         List<Pair<String, List<String>>> labels = new LinkedList<>();
         List<String> names = new LinkedList<>();       
         List<String> outputFeatures = new ArrayList<>();
+        String imagesFolder = null;
         ARFFInformation arff = null;
         boolean ThreeD = false;
         outputFeatures.add("class");
@@ -60,6 +61,9 @@ public class DistanceVisualization {
                     String fn = st.nextToken();
                     if (!outputFeatures.contains(fn)) outputFeatures.add(fn);
                 }
+                i++;
+            } else if (args[i].equals("-images")) {
+                imagesFolder = args[i+1];
                 i++;
             } else if (args[i].equals("-arff")) {
                 File arffFile = new File(args[i+1]);
@@ -102,7 +106,7 @@ public class DistanceVisualization {
  
         setIndexLabels("index", matrices, labels);
          
-        createVisualization(new ArrayList<>(), matrices, labels, names, arff, outputFeatures, ThreeD);        
+        createVisualization(new ArrayList<>(), matrices, labels, names, arff, outputFeatures, ThreeD, imagesFolder);        
     }
 
 
@@ -112,14 +116,15 @@ public class DistanceVisualization {
                                            List<String> names, 
                                            ARFFInformation arff,
                                            List<String> outputFeatures, 
-                                           boolean ThreeD) {
+                                           boolean ThreeD, 
+                                           String imagesFolder) {
         if (ThreeD) {
             Visualization3DMultiViewGUI.SHOW_KEY = true;
             Visualization3DMultiViewGUI w;
             if (arff==null) {
-                w = new Visualization3DMultiViewGUI("Data Visualization", matrices, positions, labels, names, null, null, null, 1);
+                w = new Visualization3DMultiViewGUI("Data Visualization", matrices, positions, labels, names, null, null, null, imagesFolder, 1);
             } else {
-                w = new Visualization3DMultiViewGUI("Data Visualization", matrices, positions, labels, names, arff.featureNames, arff.originalData, arff.outputFeatures, 1);
+                w = new Visualization3DMultiViewGUI("Data Visualization", matrices, positions, labels, names, arff.featureNames, arff.originalData, arff.outputFeatures, imagesFolder, 1);
             }
 //            w.visualization.KEY_THRESHOLD = 1;
             w.setResizable(true);

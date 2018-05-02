@@ -12,6 +12,8 @@ import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -20,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import javax.imageio.ImageIO;
 import javax.swing.*;
  
 /**
@@ -32,6 +35,7 @@ public class Visualization3D extends JPanel {
 
     public boolean SHOW_KEY = true;
     public List<String> toAppearInKey = new LinkedList<>();    
+    public String imagesFolder = null;
     
     public String []names = null;
     
@@ -85,7 +89,8 @@ public class Visualization3D extends JPanel {
     public Visualization3D(Visualization3D v) {
         SHOW_KEY = v.SHOW_KEY;
         names = v.names;
-
+        imagesFolder = v.imagesFolder;
+        
         m_continuous1 = v.m_continuous1;
         m_continuous2 = v.m_continuous2;
         m_continuous3 = v.m_continuous3;
@@ -131,11 +136,13 @@ public class Visualization3D extends JPanel {
     }
 
 
-    public Visualization3D(List<String> cl, List<String> ll, List<String> forKey, boolean continuous) {
+    public Visualization3D(List<String> cl, List<String> ll, List<String> forKey, boolean continuous, String a_imagesFolder) {
         String []ll_array = new String [ll.size()];
         for(int i = 0;i<ll.size();i++) ll_array[i] = ll.get(i);
         names = ll_array;
         instancesToIgnore = new boolean[names.length];
+        
+        imagesFolder = a_imagesFolder;
         
         locations = new Point3d[names.length];
         for(int i = 0;i<names.length;i++) {
@@ -570,7 +577,6 @@ public class Visualization3D extends JPanel {
         if (!highlightedCases.isEmpty()) {
             int hlcx = -1, hlcy = -1;
             for(int highlightedCase: highlightedCases) {
-                String name = names[highlightedCase];
                 hlcx = caseX(highlightedCase,dx,dy, base_case_size);
                 hlcy = caseY(highlightedCase,dx,dy, base_case_size);
                 int case_size = caseSize(highlightedCase, dx, dy, base_case_size);
@@ -586,11 +592,14 @@ public class Visualization3D extends JPanel {
                 g.setColor(color);
                 g.drawArc(hlcx-(case_size+8)/2, hlcy-(case_size+8)/2, case_size+8, case_size+8, 0, 360);
             }
-
+            
             // draw text box:
             {
                 List<String> lines = new ArrayList<>();
                 List<Rectangle2D> bounds = new ArrayList<>();
+                List<BufferedImage> images = new ArrayList<>();
+                int maxImageHeight = 0;
+                int totalImageWidth = 0;
                 String s1 = "";
                 int idx = 0;
                 for(int highlightedCase: highlightedCases) {
@@ -599,6 +608,19 @@ public class Visualization3D extends JPanel {
                     if (s1.length()>100) {
                         s1 += "... and " + (highlightedCases.size()-idx) + " others";
                         break;
+                    }
+                    // get images:
+                    if (imagesFolder != null && images.size()<2) {
+                        String path = imagesFolder + "/" + names[highlightedCase] + ".png";
+                        try {
+                            File f = new File(path);
+                            BufferedImage img = ImageIO.read(f);
+                            images.add(img);
+                            if (img.getHeight() > maxImageHeight) maxImageHeight = img.getHeight();
+                            totalImageWidth += img.getWidth();
+                        }catch(Exception e) {
+                            // ...
+                        }
                     }
                 }
                 while(s1.length()>100) {
@@ -632,8 +654,9 @@ public class Visualization3D extends JPanel {
                 }
                 tdx+=padding*2;
                 tdy+=padding*3;
-                
- 
+                tdy+=maxImageHeight;
+                if (tdx<totalImageWidth) tdx = totalImageWidth;
+                                
                 g.setColor(Color.lightGray);
                 g.fillRect(hlcx+base_case_size/2-tdx/2, hlcy+base_case_size+2, tdx, tdy);
                 g.setColor(Color.black);
@@ -644,6 +667,11 @@ public class Visualization3D extends JPanel {
                     Rectangle2D r = bounds.get(i);
                     g.drawString(line, hlcx+base_case_size/2-tdx/2+padding, (int)(ystart + r.getHeight()));
                     ystart+=r.getHeight() + padding;
+                }
+                int xstart = hlcx+base_case_size/2-tdx/2+padding;
+                for(BufferedImage img:images) {
+                    g.drawImage(img, xstart, ystart, null);
+                    xstart+=img.getWidth();
                 }
 //                g.drawString(s2, x+case_size/2-tdx/2+padding, (int)(y+case_size+2+r1.getHeight()+r2.getHeight())+padding*2);
             }

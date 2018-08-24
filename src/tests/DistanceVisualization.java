@@ -238,7 +238,7 @@ public class DistanceVisualization {
             if (line == null) {
                 break;
             }
-            System.out.println(line + " -> " + ret.featureNames.size());
+            //System.out.println(line + " -> " + ret.featureNames.size());
             StringTokenizer st = new StringTokenizer(line, ",");
             Object instance[] = new Object[ret.featureNames.size()];
             for (int i = 0; i < instance.length; i++) {
@@ -382,7 +382,7 @@ public class DistanceVisualization {
             }
         }
 
-        System.out.println(Arrays.toString(ignore));
+//        System.out.println(Arrays.toString(ignore));
         
         DenseDistanceMatrix m = new DenseDistanceMatrix(n);
         for (int i = 0; i < n; i++) {

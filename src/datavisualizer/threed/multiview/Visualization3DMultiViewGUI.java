@@ -45,6 +45,7 @@ public class Visualization3DMultiViewGUI extends JFrame {
     List<Pair<String, Visualization3DPositionController>> controllers = null;
     JComboBox controllerSelectionBox = null;
     Checkbox freezeCheckBox = null;
+    Checkbox legendCheckBox = null;
 
     List<Pair<String, List<String>>> labelSets = null;
 
@@ -149,6 +150,15 @@ public class Visualization3DMultiViewGUI extends JFrame {
                 }
             });
             topPanel.add(freezeCheckBox);
+
+            legendCheckBox = new Checkbox("Legend");
+            legendCheckBox.setState(true);
+            legendCheckBox.addItemListener(new ItemListener() {
+                public void itemStateChanged(ItemEvent e) {
+                    repaint();
+                }
+            });
+            topPanel.add(legendCheckBox);
             
             JButton addView = new JButton("+1 view");
             addView.addActionListener(new ActionListener() {
@@ -220,13 +230,14 @@ public class Visualization3DMultiViewGUI extends JFrame {
 
 
     public void updateLoop() {
-        boolean first = true;
+        int cycle = 0;
         while (true) {
             int sleep_amount = 1;
-            if (first) {
+            if (cycle == 0) {
                 // give time to SWING to redraw the whole thing at launch:
                 sleep_amount = 500;
-                first = false;
+            } else if ((cycle % 10) == 0) {
+                sleep_amount = 50;
             }
             if (!freezeCheckBox.getState() && controllerSelected >= 0) {
                 controllers.get(controllerSelected).m_b.updatePositions();
@@ -248,9 +259,11 @@ public class Visualization3DMultiViewGUI extends JFrame {
             }
 
             for (Visualization3DMultiViewGUIView v : views) {
+                v.m_visualization.SHOW_KEY = legendCheckBox.getState();
                 v.update();
             }
             visualization.modifiedByMouseListener = false;
+            cycle++;
         }
     }
 

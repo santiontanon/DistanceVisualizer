@@ -610,7 +610,7 @@ public class Visualization3D extends JPanel {
                         break;
                     }
                     // get images:
-                    if (imagesFolder != null && images.size()<2) {
+                    if (imagesFolder != null && images.size()<3) {
                         String path = imagesFolder + "/" + names[highlightedCase] + ".png";
                         try {
                             File f = new File(path);

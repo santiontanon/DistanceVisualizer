@@ -121,7 +121,7 @@ public class ForceDistanceMatrixVisualization implements VisualizationPositionCo
             visualization.loc_y[i] += forces_y[i]*speed;
 //            visualization.locations[i].setLocation(visualization.locations[i].getX()+forces_x[i]*speed, visualization.locations[i].getY()+forces_y[i]*speed);
         }
-
+        
         return error;
     }     
 }

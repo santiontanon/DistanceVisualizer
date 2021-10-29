@@ -92,7 +92,7 @@ public class DenseDistanceMatrix extends DistanceMatrix{
         m.names = names;
         
         for(int i = 0;i<matrix.length;i++) {
-            for(int j = 0;j<matrix.length;j++) {
+            for(int j = 0;j<matrix[i].length;j++) {
 //                m.matrix[i][j] = Math.sqrt(Math.log(1+m1.matrix[i][j]));
                 m.matrix[i][j] = matrix[i][j]*matrix[i][j];
             }
@@ -185,6 +185,10 @@ public class DenseDistanceMatrix extends DistanceMatrix{
                 } else {
                     tmp += c;
                 }
+            }
+            if (!tmp.isEmpty()) {
+                d.matrix[row][column] = Double.parseDouble(tmp);
+                tmp = "";
             }
             row++;
         }

@@ -44,6 +44,7 @@ public class Visualization3DMultiViewGUI extends JFrame {
     
     List<Pair<String, Visualization3DPositionController>> controllers = null;
     JComboBox controllerSelectionBox = null;
+    Checkbox outlinesCheckBox = null;
     Checkbox freezeCheckBox = null;
     Checkbox legendCheckBox = null;
 
@@ -143,6 +144,15 @@ public class Visualization3DMultiViewGUI extends JFrame {
             controllerSelectionBox = new JComboBox(controllerNames);
             topPanel.add(controllerSelectionBox);
             
+            outlinesCheckBox = new Checkbox("Outlines");
+            outlinesCheckBox.setState(true);
+            outlinesCheckBox.addItemListener(new ItemListener() {
+                public void itemStateChanged(ItemEvent e) {
+                    repaint();
+                }
+            });
+            topPanel.add(outlinesCheckBox);
+
             freezeCheckBox = new Checkbox("Freeze");
             freezeCheckBox.addItemListener(new ItemListener() {
                 public void itemStateChanged(ItemEvent e) {
@@ -260,6 +270,7 @@ public class Visualization3DMultiViewGUI extends JFrame {
 
             for (Visualization3DMultiViewGUIView v : views) {
                 v.m_visualization.SHOW_KEY = legendCheckBox.getState();
+                v.m_visualization.DRAW_OUTLINE = outlinesCheckBox.getState();
                 v.update();
             }
             visualization.modifiedByMouseListener = false;

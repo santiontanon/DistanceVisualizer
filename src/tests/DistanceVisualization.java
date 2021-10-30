@@ -46,52 +46,56 @@ public class DistanceVisualization {
         boolean ThreeD = false;
         outputFeatures.add("class");
         
-        for(int i = 0;i<args.length;i++) {
-            if (args[i].equals("-DM")) {
-                String matrixFileName = args[i+1];
-                loadDistanceMatrix(matrixFileName, matrixFileName, matrices, names);                
-                i++;
-            } else if (args[i].equals("-labels")) {
-                String labelsFileName = args[i+1];
-                loadLabels(labelsFileName, labelsFileName, labels);                
-                i++;
-            } else if (args[i].equals("-arffOutputFeatures")) {
-                StringTokenizer st = new StringTokenizer(args[i+1],",");
-                while(st.hasMoreTokens()) {
-                    String fn = st.nextToken();
-                    if (!outputFeatures.contains(fn)) outputFeatures.add(fn);
-                }
-                i++;
-            } else if (args[i].equals("-images")) {
-                imagesFolder = args[i+1];
-                i++;
-            } else if (args[i].equals("-arff")) {
-                File arffFile = new File(args[i+1]);
-                arff = loadDataFromArff(arffFile.getAbsolutePath());
-                arff.outputFeatures = outputFeatures;
-                Object[][] norm_minmax = normalizeARFF(arff,NORMALIZE_MIN_MAX);
-                Object[][] norm_avgstd = normalizeARFF(arff,NORMALIZE_AVG_STD);
-                DistanceMatrix m = euclideanFromARFF(arff, arff.originalData);
-                matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance", m));
-                matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance-norm-minmax", 
-                        euclideanFromARFF(arff,norm_minmax)));
-                matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance-norm-std", 
-                        euclideanFromARFF(arff,norm_avgstd)));
-                matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-jaccard-distance", 
-                        jaccardFromARFF(arff, arff.originalData, outputFeatures)));
-                matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-jaccard-distance-norm-minmax", 
-                        jaccardFromARFF(arff,norm_minmax, outputFeatures)));
-
-                labels.add(new Pair<>("ARFF-class-labels",arff.classLabels));
-                if (names.isEmpty()) {
-                    for(String name:m.names) names.add(name);
-                }
-                i++;
-            } else if (args[i].equals("-3d")) {
-                ThreeD = true;
-            } else {
-                System.out.println("Unrecognized parameter '"+args[i]+"'");
-                System.exit(1);
+        for (int i = 0;i<args.length;i++) {
+            switch (args[i]) {
+                case "-DM":
+                    String matrixFileName = args[i+1];
+                    loadDistanceMatrix(matrixFileName, matrixFileName, matrices, names);
+                    i++;
+                    break;
+                case "-labels":
+                    String labelsFileName = args[i+1];
+                    loadLabels(labelsFileName, labelsFileName, labels);
+                    i++;
+                    break;
+                case "-arffOutputFeatures":
+                    StringTokenizer st = new StringTokenizer(args[i+1],",");
+                    while(st.hasMoreTokens()) {
+                        String fn = st.nextToken();
+                        if (!outputFeatures.contains(fn)) outputFeatures.add(fn);
+                    }   i++;
+                    break;
+                case "-images":
+                    imagesFolder = args[i+1];
+                    i++;
+                    break;
+                case "-arff":
+                    File arffFile = new File(args[i+1]);
+                    arff = loadDataFromArff(arffFile.getAbsolutePath());
+                    arff.outputFeatures = outputFeatures;
+                    Object[][] norm_minmax = normalizeARFF(arff,NORMALIZE_MIN_MAX);
+                    Object[][] norm_avgstd = normalizeARFF(arff,NORMALIZE_AVG_STD);
+                    DistanceMatrix m = euclideanFromARFF(arff, arff.originalData);
+                    matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance", m));
+                    matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance-norm-minmax",
+                            euclideanFromARFF(arff,norm_minmax)));
+                    matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-euclidean-distance-norm-std",
+                            euclideanFromARFF(arff,norm_avgstd)));
+                    matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-jaccard-distance",
+                            jaccardFromARFF(arff, arff.originalData, outputFeatures)));
+                    matrices.add(new Pair<>("ARFF-"+arffFile.getName()+"-jaccard-distance-norm-minmax",
+                            jaccardFromARFF(arff,norm_minmax, outputFeatures)));
+                    labels.add(new Pair<>("ARFF-class-labels",arff.classLabels));
+                    if (names.isEmpty()) {
+                        for (String name:m.names) names.add(name);
+                    }   i++;
+                    break;
+                case "-3d":
+                    ThreeD = true;
+                    break;
+                default:
+                    System.out.println("Unrecognized parameter '"+args[i]+"'");
+                    System.exit(1);
             }
         }
         
@@ -160,7 +164,7 @@ public class DistanceVisualization {
         List<String> names) throws Exception {
         DenseDistanceMatrix m = DenseDistanceMatrix.loadDenseMatrix(fileName);
         m.makeSymmetric();
-        matrices.add(new Pair<String, DistanceMatrix>(name, m));
+        matrices.add(new Pair<>(name, m));
         if (names.isEmpty()) {
             for (int i = 0; i < m.names.length; i++) {
                 names.add(m.names[i]);
@@ -173,7 +177,7 @@ public class DistanceVisualization {
     public static void loadLabels(String fileName, String name,
         List<Pair<String, List<String>>> all_labels) throws Exception {
         BufferedReader br = new BufferedReader(new FileReader(fileName));
-        List<String> labels = new ArrayList<>();
+        List<List<String>> labels = new ArrayList<>();
         do {
             String line = br.readLine();
             if (line == null) {
@@ -181,9 +185,18 @@ public class DistanceVisualization {
             }
             StringTokenizer st = new StringTokenizer(line, "\t");
             st.nextToken();
-            labels.add(st.nextToken());
+            int i = 0;
+            while(st.hasMoreTokens()) {
+                if (labels.size() <= i) {
+                    labels.add(new ArrayList<>());
+                }
+                labels.get(i).add(st.nextToken());
+                i++;
+            }
         } while (true);
-        all_labels.add(new Pair<String, List<String>>(name, labels));
+        for (int i = 0;i<labels.size();i++) {
+            all_labels.add(new Pair<>(name+"-"+i, labels.get(i)));
+        }
         br.close();
     }
     
@@ -194,10 +207,10 @@ public class DistanceVisualization {
         List<String> labels = new ArrayList<>();
         if (!matrices.isEmpty()) {
             for (int i = 0; i < matrices.get(0).m_b.names.length; i++) labels.add("" + i);
-            all_labels.add(new Pair<String, List<String>>(name, labels));
+            all_labels.add(new Pair<>(name, labels));
         } else if (!all_labels.isEmpty()) {
             for (int i = 0; i < all_labels.get(0).m_b.size(); i++) labels.add("" + i);
-            all_labels.add(new Pair<String, List<String>>(name, labels));
+            all_labels.add(new Pair<>(name, labels));
         }
     }       
     

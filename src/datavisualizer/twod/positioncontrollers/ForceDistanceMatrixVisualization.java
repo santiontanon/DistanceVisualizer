@@ -101,6 +101,7 @@ public class ForceDistanceMatrixVisualization implements VisualizationPositionCo
                         error+=d;
                         if (d>0.000001) {
                             f = (d - matrixsq.get(i,j))/d; 
+//                            f = (d - matrixsq.get(i,j));  // Why was I dividing by "d"?
                             forces_x[i] += dx*f;
                             forces_y[i] += dy*f;
                             l2++;

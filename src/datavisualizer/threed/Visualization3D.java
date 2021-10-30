@@ -34,6 +34,7 @@ public class Visualization3D extends JPanel {
     public static final int MAX_CASE_SIZE_TO_BE_DRAWN = 64;
 
     public boolean SHOW_KEY = true;
+    public boolean DRAW_OUTLINE = true;
     public List<String> toAppearInKey = new LinkedList<>();    
     public String imagesFolder = null;
     
@@ -569,8 +570,10 @@ public class Visualization3D extends JPanel {
                 }
             }
             g.fillArc(x-(case_size)/2, y-(case_size)/2, case_size, case_size, 0, 360);
-            g.setColor(outlineColor);
-            g.drawArc(x-(case_size)/2, y-(case_size)/2, case_size, case_size, 0, 360);
+            if (DRAW_OUTLINE) {
+                g.setColor(outlineColor);
+                g.drawArc(x-(case_size)/2, y-(case_size)/2, case_size, case_size, 0, 360);
+            }
         }
 
         
